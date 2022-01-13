@@ -37,6 +37,7 @@ const { NetInstrumentation } = require('@opentelemetry/instrumentation-net');
 const { PgInstrumentation } = require('@opentelemetry/instrumentation-pg');
 const { RedisInstrumentation } = require('@opentelemetry/instrumentation-redis');
 import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-proto';
+import { detectEventType } from './eventDetection/index';
 
 declare global {
   // in case of downstream configuring span processors etc
@@ -53,7 +54,41 @@ const instrumentations = [
   new AwsInstrumentation({
     suppressInternalInstrumentation: true,
   }),
-  new AwsLambdaInstrumentation(),
+  new AwsLambdaInstrumentation({
+    requestHook: (span: any, { event = {} }: { event: any }) => {
+      const eventType = detectEventType(event);
+      span.setAttribute('faas.eventType', eventType);
+      if (eventType === 'aws.apigateway.http') {
+        span.setAttribute('faas.source', 'aws.apigateway');
+        span.setAttribute('faas.accountId', event.requestContext.accountId);
+        span.setAttribute('faas.apiId', event.requestContext.apiId);
+        span.setAttribute('faas.resourceId', event.requestContext.resourceId);
+        span.setAttribute('faas.domainPrefix', event.requestContext.domainPrefix);
+        span.setAttribute('faas.domain', event.requestContext.domainName);
+        span.setAttribute('faas.requestId', event.requestContext.requestId);
+        span.setAttribute('faas.extendedRequestId', event.requestContext.extendedRequestId);
+        span.setAttribute('faas.requestTime', event.requestContext.requestTime);
+        span.setAttribute('faas.requestTimeEpoch', event.requestContext.requestTimeEpoch);
+        span.setAttribute('faas.httpPath', event.requestContext.resourcePath);
+        span.setAttribute('faas.httpMethod', event.requestContext.httpMethod);
+        span.setAttribute('faas.xTraceId', event.headers && event.headers['X-Amzn-Trace-Id']);
+        span.setAttribute('faas.userAgent', event.headers && event.headers['User-Agent']);
+      } else if (eventType === 'aws.apigatewayv2.http') {
+        span.setAttribute('faas.source', 'aws.apigatewayv2');
+        span.setAttribute('faas.accountId', event.requestContext.accountId);
+        span.setAttribute('faas.apiId', event.requestContext.apiId);
+        span.setAttribute('faas.domainPrefix', event.requestContext.domainPrefix);
+        span.setAttribute('faas.domain', event.requestContext.domainName);
+        span.setAttribute('faas.requestId', event.requestContext.requestId);
+        span.setAttribute('faas.requestTime', event.requestContext.time);
+        span.setAttribute('faas.requestTimeEpoch', event.requestContext.timeEpoch);
+        span.setAttribute('faas.httpPath', event.requestContext.http.path);
+        span.setAttribute('faas.httpMethod', event.requestContext.http.method);
+        span.setAttribute('faas.xTraceId', event.headers && event.headers['x-amzn-trace-id']);
+        span.setAttribute('faas.userAgent', event.headers && event.headers['user-agent']);
+      }
+    }
+  }),
   new DnsInstrumentation(),
   new ExpressInstrumentation(),
   new GraphQLInstrumentation(),

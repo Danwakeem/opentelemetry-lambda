@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "prepare": "npm run compile",
     "compile": "tsc -p .",
-    "postcompile": "copyfiles 'node_modules/**' build/workspace/nodejs && copyfiles -f 'scripts/*' build/workspace && copyfiles -f 'build/src/*' build/workspace && cd build/workspace && bestzip ../layer.zip *"
+    "postcompile": "copyfiles 'node_modules/**' build/workspace/nodejs && copyfiles -f 'scripts/*' build/workspace && copyfiles -f 'build/src/*' build/workspace && copyfiles -f 'build/src/eventDetection/*' build/workspace/eventDetection && copyfiles -f 'build/src/eventDetection/eventTypes/*' build/workspace/eventDetection/eventTypes && cd build/workspace && bestzip ../layer.zip *"
   },
   "keywords": [
     "opentelemetry",
