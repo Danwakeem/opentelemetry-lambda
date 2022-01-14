@@ -27,8 +27,9 @@
   },
   "dependencies": {
     "@opentelemetry/api": "^1.0.3",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.27.0",
     "@opentelemetry/exporter-otlp-proto": "^0.26.0",
-    "@opentelemetry/instrumentation": "^0.26.0",
+    "@opentelemetry/instrumentation": "^0.27.0",
     "@opentelemetry/instrumentation-aws-lambda": "^0.27.0",
     "@opentelemetry/instrumentation-aws-sdk": "^0.1.0",
     "@opentelemetry/instrumentation-dns": "^0.26.0",
@@ -47,6 +48,7 @@
     "@opentelemetry/propagator-aws-xray": "^1.0.0",
     "@opentelemetry/resource-detector-aws": "^1.0.0",
     "@opentelemetry/resources": "^1.0.0",
+    "@opentelemetry/sdk-metrics-base": "^0.27.0",
     "@opentelemetry/sdk-trace-base": "^1.0.0",
     "@opentelemetry/sdk-trace-node": "^1.0.0"
   }
