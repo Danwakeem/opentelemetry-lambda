@@ -106,9 +106,17 @@ const instrumentations = [
 
       counter.add(1, attributes);
     },
-    responseHook: (span, { err }) => {
+    responseHook: (span, { err, res }) => {
+      let jsonBody: any = {};
+      try {
+        jsonBody = JSON.parse(res.body);
+      } catch(error) {}
+      
       if (err instanceof Error) {
         span.setAttribute('faas.error', err.message);
+        errorCount.add(1, attributes);
+      } else if (Array.isArray(jsonBody.errors) && jsonBody.errors.length > 0) {
+        span.setAttribute('faas.error', jsonBody.errors[0].message);
         errorCount.add(1, attributes);
       }
   }
