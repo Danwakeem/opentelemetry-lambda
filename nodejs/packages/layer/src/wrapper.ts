@@ -59,6 +59,9 @@ const meterProvider = new MeterProvider({
 });
 const slsMeter = meterProvider.getMeter('serverless-meter');
 const counter = slsMeter.createCounter('faas.invoke');
+const errorCount = slsMeter.createCounter('faas.error');
+
+let attributes: any = {};
 
 const instrumentations = [
   new AwsInstrumentation({
@@ -67,9 +70,9 @@ const instrumentations = [
   new AwsLambdaInstrumentation({
     requestHook: (span: Span, { event = {} }: { event: any }) => {
       const eventType = detectEventType(event);
-      const attributes: any = {
+      attributes = {
         'faas.eventType': eventType || '',
-      }
+      };
       if (eventType === 'aws.apigateway.http') {
         attributes['faas.source'] = 'aws.apigateway';
         attributes['faas.accountId'] = event.requestContext.accountId;
@@ -103,6 +106,12 @@ const instrumentations = [
 
       counter.add(1, attributes);
     },
+    responseHook: (span, { err }) => {
+      if (err instanceof Error) {
+        span.setAttribute('faas.error', err.message);
+        errorCount.add(1, attributes);
+      }
+  }
   }),
   new DnsInstrumentation(),
   new ExpressInstrumentation(),
