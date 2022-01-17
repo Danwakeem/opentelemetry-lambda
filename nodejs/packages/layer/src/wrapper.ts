@@ -123,7 +123,7 @@ const instrumentations = [
     },
     responseHook: (span, { err, res }) => {
       durationMetric.end = new Date().getTime();
-      durationHistogram.record((durationMetric.start - durationMetric.end), attributes);
+      durationHistogram.record((durationMetric.end - durationMetric.start), attributes);
       durationMetric.start = null;
       durationMetric.end = null;
       let jsonBody: any = {};
