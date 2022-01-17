@@ -55,13 +55,27 @@ console.log('Registering OpenTelemetry');
 
 const meterProvider = new MeterProvider({
   exporter: new OTLPMetricExporter(),
-  interval: 60000,
+  interval: 1000,
 });
 const slsMeter = meterProvider.getMeter('serverless-meter');
-const counter = slsMeter.createCounter('faas.invoke');
-const errorCount = slsMeter.createCounter('faas.error');
+const counter = slsMeter.createCounter('faas.invoke', {
+  valueType: 0, // Int value
+  aggregationTemporality: 2,
+});
+const errorCount = slsMeter.createCounter('faas.error', {
+  valueType: 0,
+  aggregationTemporality: 2,
+});
+const durationHistogram = slsMeter.createHistogram('faas.duration', {
+  valueType: 0, // Int value
+});
 
 let attributes: any = {};
+
+const durationMetric: any = {
+  start: null,
+  end: null,
+};
 
 const instrumentations = [
   new AwsInstrumentation({
@@ -69,6 +83,7 @@ const instrumentations = [
   }),
   new AwsLambdaInstrumentation({
     requestHook: (span: Span, { event = {} }: { event: any }) => {
+      durationMetric.start = new Date().getTime();
       const eventType = detectEventType(event);
       attributes = {
         'faas.eventType': eventType || '',
@@ -107,11 +122,15 @@ const instrumentations = [
       counter.add(1, attributes);
     },
     responseHook: (span, { err, res }) => {
+      durationMetric.end = new Date().getTime();
+      durationHistogram.record((durationMetric.start - durationMetric.end), attributes);
+      durationMetric.start = null;
+      durationMetric.end = null;
       let jsonBody: any = {};
       try {
         jsonBody = JSON.parse(res.body);
       } catch(error) {}
-      
+
       if (err instanceof Error) {
         span.setAttribute('faas.error', err.message);
         errorCount.add(1, attributes);
